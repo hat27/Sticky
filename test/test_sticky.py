@@ -20,9 +20,6 @@ class GetFieldKeysTest(unittest.TestCase):
         self.obj = FieldValueGenerator()
 
     def test_keys(self):
-        """
-        use <>
-        """
         template = "<a>_<b>"
         actual = self.obj.get_field_keys(template)
         self.assertEqual(actual, ["<a>", "<b>"])
