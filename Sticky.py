@@ -23,6 +23,7 @@ class FieldValueGenerator(object):
         template = os.path.normpath(template)
         for key in field_keys:
             template = template.replace(key, "(.*)")
+
         values = re.match(template, value, re.IGNORECASE)
         if values:
             field_value = {}
@@ -94,7 +95,6 @@ class StickyConfig(object):
             with codecs.open(path, "w") as y:
                 yaml.dump({"info": info, "data": data}, y, default_flow_style=False)
 
-
     def get_key_file(self, template, directory=None):
         if directory is None:
             directory = self.directory
@@ -119,11 +119,11 @@ class StickyConfig(object):
     def get_override_file_list(self, path):
         if not os.path.exists(path):
             return []
-        info, data = self.read(path)
 
+        info, data = self.read(path)
         paths = [path]
+
         while info.get("parent", None):
-        
             d = os.path.dirname(path)
             parent = os.path.normpath(os.path.join(path, info["parent"]))
             if os.path.exists(parent):
@@ -138,8 +138,8 @@ class StickyConfig(object):
         def value_mapping(value, use_field_value):
             if not use_field_value:
                 return value
-            copy_field_value = copy.deepcopy(self.field_value)
 
+            copy_field_value = copy.deepcopy(self.field_value)
             if isinstance(value, (str, unicode)):
                 gen = self.generator.generate(value, copy_field_value, force=True)
                 if gen.startswith("@"):
@@ -147,12 +147,14 @@ class StickyConfig(object):
                         gen = os.path.normpath(os.path.join(self.directory, gen)).replace("\\", "/")
                     else:
                         gen = gen[1:]
+
                 return gen
             
             elif isinstance(value, list):
                 new = []
                 for v in value:
                     new.append(value_mapping(v, use_field_value))
+
                 return new
 
             elif isinstance(value, dict):
@@ -165,8 +167,10 @@ class StickyConfig(object):
                                 new[k] = os.path.normpath(os.path.join(self.directory, new[k])).replace("\\", "/")
                             else:
                                 new[k] = new[k][1:]
+
                     else:
                         new[k] = value_mapping(v, use_field_value)
+
                 return new
 
             return value
@@ -212,7 +216,6 @@ class StickyConfig(object):
 
                 for each in override:
                     override_.append(each)
-
                 return value_mapping(override_, self.field_value)
 
             else:

@@ -14,6 +14,7 @@ if not mod_path in sys.path:
 from Sticky import FieldValueGenerator, StickyConfig
 
 
+# FieldValueGenerator
 class GetFieldKeysTest(unittest.TestCase):
     def setUp(self):
         self.obj = FieldValueGenerator()
@@ -47,6 +48,7 @@ class GetFieldKeysTest(unittest.TestCase):
         actual = self.obj.get_field_keys(template)
         self.assertEqual(actual, [])
 
+
 class GetFieldValueTest(unittest.TestCase):
     def setUp(self):
         self.obj = FieldValueGenerator()
@@ -63,6 +65,7 @@ class GetFieldValueTest(unittest.TestCase):
         value = "test1_1_test2"
         actual = self.obj.get_field_value(template, value)
         self.assertEqual(actual, False)
+
 
 class GenerateTest(unittest.TestCase):
     def setUp(self):
@@ -99,6 +102,9 @@ class GenerateTest(unittest.TestCase):
         self.assertEqual(actual, "Ep99_s05_c20_c20")
 
 
+
+
+# StickyConfig
 class GetKeyFileTest(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.mkdtemp().replace("\\", "/")
@@ -106,7 +112,6 @@ class GetKeyFileTest(unittest.TestCase):
             open("%s/%s.yml" % (self.directory, f), "w")
     
         self.obj = StickyConfig(self.directory)
-
 
     def test_get_get_key_file_collect(self):
         template = "<episode>_<scene>_<cut>_<progress>"
@@ -131,6 +136,7 @@ class GetKeyFileTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.directory)
 
+
 class ValueOverrideTest(unittest.TestCase):
     def setUp(self):
         self.obj = StickyConfig()
@@ -140,7 +146,6 @@ class ValueOverrideTest(unittest.TestCase):
         override = {"a": 2, "b": 4}
         actual = self.obj.values_override(base, override)
         self.assertEqual(actual, {"a": 2, "b": 4, "c": 3})
-
 
     def test_dict_override2(self):
         base = {"a": [1, 2, 3, 4], "b": 5}
@@ -165,6 +170,7 @@ class ValueOverrideTest(unittest.TestCase):
 
         actual = self.obj.values_override(base, override)
         self.assertEqual(actual, [{"a": 1, "b": 2}])
+
 
 class ValueOverrideKeywordDictTest(unittest.TestCase):
     def setUp(self):
@@ -216,6 +222,7 @@ class ValueOverrideKeywordDictTest(unittest.TestCase):
         self.assertEqual(actual, [{"name": "b", "value": 2},
                                   {"name": "a", "value": 10}, 
                                   {"name": "c", "value": 5}])
+
 
 class ValueOverrideHiearachyTest(unittest.TestCase):
     def setUp(self):
@@ -325,6 +332,7 @@ class ValueOverrideHiearachyTest(unittest.TestCase):
                      }
         self.assertEqual(actual, check)
 
+
 class ValueMappingTest(unittest.TestCase):
     def setUp(self):
         self.obj = StickyConfig()
@@ -431,6 +439,7 @@ class ValueMappingTest(unittest.TestCase):
                      }
         self.assertEqual(actual, check)
 
+
 class GetProjectFileTest(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.mkdtemp().replace("\\", "/")
@@ -466,8 +475,6 @@ class GetProjectFileTest(unittest.TestCase):
         info = {"name": "ep01_s01_c01_anim",
                 "parent": "../ep01_s01_c01.yml"}
         self.obj.save("%s/%s.yml" % (self.directory, info["name"]), info=info, data=data)
-
-
 
     def test_get_override_file_list(self):
         template = "<episode>_<scene>_<cut>_<progress>"
@@ -508,9 +515,6 @@ class GetProjectFileTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory)
-
-
-
 
 if __name__ == "__main__":
     unittest.main()     
