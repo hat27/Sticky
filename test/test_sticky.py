@@ -443,14 +443,14 @@ class GetProjectFileTest(unittest.TestCase):
         self.obj = StickyConfig(self.directory)
 
         info = {"name": "base"}
-        data = {"base": "", "yyy": 12345}
+        data = {"base": "", "xxx": "12345"}
 
         self.obj.save("%s/%s.yml" % (self.directory, info["name"]), info=info, data=data)
 
 
         info = {"name": "ep01",
                 "parent": "../base.yml"}
-        data = {"test3": "b"}
+        data = {"test3": "b", "yyy": 12345}
         self.obj.save("%s/%s.yml" % (self.directory, info["name"]), info=info, data=data)
 
 
@@ -499,19 +499,48 @@ class GetProjectFileTest(unittest.TestCase):
         base_info, base_data = self.obj.read(base)
         
         actual = base_data
-
         for each in override_list:
             override_info, override_data = self.obj.read(each)
             actual = self.obj.values_override(actual, override_data, use_field_value=False)
 
-        result = {"base": "new", "yyy": 12345,
-                  "test3": "-----------------", "test2": "b",
+        result = {"base": "new", 
+                  "yyy": 12345,
+                  "xxx": "12345",
+                  "test3": "-----------------", 
+                  "test2": "b",
                   "test": "a"}        
         
         self.assertEqual(actual, result)
 
-    def tearDown(self):
-        shutil.rmtree(self.directory)
+    def test_trace_files(self):
+        template = "<episode>_<scene>_<cut>_<progress>"
+        fields = {"<episode>": "ep01", "<scene>": "s01", "<cut>": "c01", "<progress>": "anim"}
+        self.obj.set_field_value(fields)
+        f = self.obj.get_key_file(template)
+        
+        override_list = self.obj.get_override_file_list(f)
+        # base = override_list.pop(0)
+        # base_info, base_data = self.obj.read(base)
+        
+        # actual = base_data
+        actual = {}
+        for each in override_list:
+            override_info, override_data = self.obj.read(each)
+            actual = self.obj.values_override(actual, override_data, use_field_value=False)
+
+        temp_name = os.path.basename(os.path.dirname(f))
+        result = {"base": "new{}{}/ep01_s01_c01.yml".format(self.obj.splitter, temp_name), 
+                  "yyy": "12345{}{}/ep01.yml".format(self.obj.splitter, temp_name), 
+                  "xxx": "12345{}{}/base.yml".format(self.obj.splitter, temp_name), 
+                  "test3": "-----------------{}{}/ep01_s01_c01.yml".format(self.obj.splitter, temp_name), 
+                  "test2": "b{}{}/ep01_s01.yml".format(self.obj.splitter, temp_name),
+                  "test": "a{}{}/ep01_s01_c01.yml".format(self.obj.splitter, temp_name)}        
+
+        self.obj.trace_files(actual, override_list)
+        self.assertEqual(actual, result)
+
+    # def tearDown(self):
+    #    shutil.rmtree(self.directory)
 
 if __name__ == "__main__":
     unittest.main()     

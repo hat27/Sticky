@@ -60,6 +60,7 @@ class StickyConfig(object):
         self.field_value = None
         self.set(directory, field_value)
         self.generator = FieldValueGenerator()
+        self.splitter = "--->"
 
     def set(self, directory, field_value):
         self.set_directory(directory)
@@ -73,12 +74,12 @@ class StickyConfig(object):
 
     def read(self, path):
         if path.endswith(".yml"):
-            yml_data = yaml.load(codecs.open(path, "r"))
-            return yml_data["info"], yml_data["data"]
+            yml_data = yaml.load(codecs.open(path, "r"), Loader=yaml.SafeLoader)
+            return yml_data.get("info", {}), yml_data.get("data", {})
 
         elif path.endswith(".json"):
             json_data = json.load(codecs.open(path, "r"), "Utf8")
-            return json_data["info"], json_data["data"]
+            return json_data.get("info", {}), json_data.get("data", {})
         return {}, {}
 
     def save(self, path, info=None, data={}, **args):
@@ -123,6 +124,7 @@ class StickyConfig(object):
         info, data = self.read(path)
         paths = [path]
 
+        i = 0
         while info.get("parent", None):
             d = os.path.dirname(path)
             parent = os.path.normpath(os.path.join(path, info["parent"]))
@@ -130,6 +132,10 @@ class StickyConfig(object):
                 paths.insert(0, parent)
                 info, data = self.read(parent)
             else:
+                break
+            i += 1
+
+            if i > 100:
                 break
 
         return paths
@@ -223,3 +229,67 @@ class StickyConfig(object):
 
         else:
             return value_mapping(override, self.field_value)
+
+
+    def trace_files(self, result_data, file_list):
+        for each in file_list[::-1]:
+            file_info, file_data = self.read(each)
+            file_name = "/".join(each.replace("\\", "/").split("/")[-2:])
+            self.trace_data(result_data, file_data, file_name)
+        return result_data
+
+
+    def trace_data(self, base, data, file_name):
+        def _add_file_name(value, file_name):
+            if isinstance(value, (int, float, bool)):
+                value = unicode(value)
+
+            if isinstance(value, (str, unicode)):
+                # value = value.split(self.splitter)[0]
+                if not self.splitter in value:
+                    value = "{}{}{}".format(value, self.splitter, file_name)
+
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    value[k] = _add_file_name(v, file_name)
+
+            elif isinstance(value, list):
+                ls_ = []
+                for v2 in v:
+                    ls.append(_add_file_name(v2))
+
+                value = ls_
+
+            return value
+
+        if isinstance(base, (int, float, bool)):
+            base = unicode(base)
+
+        if isinstance(data, (int, float, bool)):
+            data = unicode(data)        
+        if type(base) != type(data):
+            return base
+
+        elif isinstance(base, dict):
+            for k, v in base.items():
+                if k in data:
+                    base[k] = self.trace_data(v, data[k], file_name)
+                else:
+                    pass
+                    # base[k] = _add_file_name(v, file_name)
+            return base
+
+        elif isinstance(base, list):
+            base.insert(0, _add_file_name("", file_name))
+            return base
+        else:
+            base = _add_file_name(base, file_name)
+            return base
+
+        return base
+
+
+
+
+
+
