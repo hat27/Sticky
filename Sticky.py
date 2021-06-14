@@ -116,7 +116,7 @@ class StickyConfig(object):
 
         return key_file
 
-    def get_override_file_list(self, path):
+    def get_override_file_list(self, path, field_value=None):
         if not os.path.exists(path):
             return []
 
@@ -124,12 +124,21 @@ class StickyConfig(object):
         paths = [path]
 
         while info.get("parent", None):
+            parent_path = info["parent"]
+            if field_value is not None:
+                for k, v in field_value.items():
+                    parent_path = parent_path.replace(k, v)
+
             d = os.path.dirname(path)
-            parent = os.path.normpath(os.path.join(path, info["parent"]))
+            parent = os.path.normpath(os.path.join(path, parent_path))
             if os.path.exists(parent):
                 paths.insert(0, parent)
                 info, data = self.read(parent)
             else:
+                break
+            i += 1
+
+            if i > 100:
                 break
 
         return paths

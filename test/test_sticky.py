@@ -436,6 +436,58 @@ class ValueMappingTest(unittest.TestCase):
                      }
         self.assertEqual(actual, check)
 
+class GetProjectFileOtherLocationTest(unittest.TestCase):
+    def setUp(self):
+        self.directory = "{}/other_location".format(tempfile.mkdtemp().replace("\\", "/"))
+        self.obj = StickyConfig(self.directory)
+
+        info = {"name": "base"}
+        data = {"base": "", "xxx": "12345"}
+
+        self.obj.save("%s/somewhere/%s.yml" % (self.directory, info["name"]), info=info, data=data)
+
+        self.map_data = {"<other_location>": "{}/somewhere".format(self.directory)}
+        info = {"name": "ep01",
+                "parent": "<other_location>/base.yml"}
+        data = {"test3": "b", "yyy": 12345}
+        self.obj.save("%s/%s.yml" % (self.directory, info["name"]), info=info, data=data)
+
+
+        info = {"name": "ep01_s01",
+                "parent": "../ep01.yml"}
+        data = {"test2": "b"}
+
+        self.obj.save("%s/%s.yml" % (self.directory, info["name"]), info=info, data=data)
+
+        info = {"name": "ep01_s01_c01",
+                "parent": "../ep01_s01.yml"}
+
+        data = {"test": "a", "base": "new", "test3": "-----------------"}
+
+        self.obj.save("%s/%s.yml" % (self.directory, info["name"]), info=info, data=data)
+
+        data = {}
+        info = {"name": "ep01_s01_c01_anim",
+                "parent": "../ep01_s01_c01.yml"}
+        self.obj.save("%s/%s.yml" % (self.directory, info["name"]), info=info, data=data)
+
+    def test_get_override_file_list(self):
+        template = "<episode>_<scene>_<cut>_<progress>"
+        fields = {"<episode>": "ep01", "<scene>": "s01", "<cut>": "c01", "<progress>": "anim"}
+        self.obj.set_field_value(fields)
+        f = self.obj.get_key_file(template)
+
+        print f
+        
+        actual = self.obj.get_override_file_list(f, map_dict={"<other_location>": "{}/somewhere".format(self.directory)})
+        actual = [os.path.basename(l) for l in actual]
+        
+        self.assertEqual(actual, ["base.yml", 
+                                  "ep01.yml", 
+                                  "ep01_s01.yml",
+                                  "ep01_s01_c01.yml",
+                                  "ep01_s01_c01_anim.yml"])
+
 
 class GetProjectFileTest(unittest.TestCase):
     def setUp(self):
