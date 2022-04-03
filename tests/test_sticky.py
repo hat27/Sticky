@@ -490,17 +490,21 @@ class GetProjectFileTest(unittest.TestCase):
         self.obj = StickyConfig(self.directory)
 
         info = {"name": "base"}
-        data = {"base": "", "yyy": 12345}
+        data = {"base": "",
+                "yyy": 12345}
 
         self.obj.save("{}/{}.yml".format(self.directory, info["name"]), info=info, data=data)
 
         info = {"name": "ep01",
                 "parent": "../base.yml"}
+
         data = {"test3": "b"}
+
         self.obj.save("{}/{}.yml".format(self.directory, info["name"]), info=info, data=data)
 
         info = {"name": "ep01_s01",
                 "parent": "../ep01.yml"}
+
         data = {"test2": "b"}
 
         self.obj.save("{}/{}.yml".format(self.directory, info["name"]), info=info, data=data)
@@ -508,13 +512,16 @@ class GetProjectFileTest(unittest.TestCase):
         info = {"name": "ep01_s01_c01",
                 "parent": "../ep01_s01.yml"}
 
-        data = {"test": "a", "base": "new", "test3": "-----------------"}
+        data = {"test": "a",
+                "base": "new",
+                "test3": "-----------------"}
 
         self.obj.save("{}/{}.yml".format(self.directory, info["name"]), info=info, data=data)
 
         data = {}
         info = {"name": "ep01_s01_c01_anim",
                 "parent": "../ep01_s01_c01.yml"}
+
         self.obj.save("{}/{}.yml".format(self.directory, info["name"]), info=info, data=data)
 
     def test_get_override_file_list(self):
@@ -556,6 +563,137 @@ class GetProjectFileTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory)
+
+
+class FormatFilesTest(unittest.TestCase):
+    maxDiff = None
+
+    def setUp(self):
+        self.directory = tempfile.mkdtemp().replace("\\", "/")
+        self.obj = StickyConfig(self.directory)
+
+        self.data = [
+            {
+                "info":
+                {
+                    "name": "a",
+                    "parent": None
+                },
+                "data":
+                {
+                    "a": 1,
+                    "test":
+                    {
+                        "abc": "abc"
+                    },
+                    "test2":
+                    {
+                        "def": 1,
+                        "ghi": 10,
+                        "pqr": ["a", "b", "c"],
+                        "stu": [
+                            {"name": "a", "value": 100},
+                            {"name": "b", "value": 200},
+                            {"name": "c", "value": 300}
+                        ]
+                    }
+                }
+            },
+            {
+                "info":
+                {
+                    "name": "b",
+                    "parent": "../a.yml"
+                },
+                "data":
+                {
+                    "b": 2,
+                    "test3":
+                    {
+                        "jkl": 999,
+                        "mno": "TEMP"
+                    }}
+                },
+            {
+                "info":
+                {
+                    "name": "c",
+                    "parent": "../b.yml"
+                },
+                "data":
+                {
+                    "c": 3,
+                    "test2":
+                    {
+                        "def": 2,
+                        "pqr": [1, 2, 3],
+                        "stu": [
+                            {"name": "a", "value": 150},
+                            {"name": "d", "value": 450}
+                        ]
+                    },
+                    "test3":
+                    {
+                        "jkl": 100
+                    }
+                }
+            }
+        ]
+
+        for each in self.data:
+            self.obj.save("{}/{}.yml".format(self.directory, each["info"]["name"]), info=each["info"], data=each["data"])
+
+    def test_trace_files(self):
+        override_result = {}
+        file_list = []
+        for each in self.data:
+            info, data = each["info"], each["data"]
+            override_result = self.obj.values_override(override_result, data)
+            file_list.append("{}/{}.yml".format(self.directory, info["name"]))
+
+        actual = self.obj.trace_files(override_result, file_list)
+        directory = os.path.basename(self.directory)
+
+        result = {
+            "a": u"1{}{}/a.yml".format(self.obj.splitter, directory),
+            "test": {
+                "abc": u"abc{}{}/a.yml".format(self.obj.splitter, directory),
+            },
+            "test2": {
+                "def": u"2{}{}/c.yml".format(self.obj.splitter, directory),
+                "ghi": u"10{}{}/a.yml".format(self.obj.splitter, directory),
+                "pqr": [
+                    u"1{}{}/c.yml".format(self.obj.splitter, directory),
+                    u"2{}{}/c.yml".format(self.obj.splitter, directory),
+                    u"3{}{}/c.yml".format(self.obj.splitter, directory)
+                    ],
+                "stu": [
+                    {
+                        "name": u"a{}{}/c.yml".format(self.obj.splitter, directory),
+                        "value": u"150{}{}/c.yml".format(self.obj.splitter, directory)
+                    },
+                    {
+                        "name": u"b{}{}/a.yml".format(self.obj.splitter, directory),
+                        "value": u"200{}{}/a.yml".format(self.obj.splitter, directory)
+                    },
+                    {
+                        "name": u"c{}{}/a.yml".format(self.obj.splitter, directory),
+                        "value": u"300{}{}/a.yml".format(self.obj.splitter, directory)
+                    },
+                    {
+                        "name": u"d{}{}/c.yml".format(self.obj.splitter, directory),
+                        "value": u"450{}{}/c.yml".format(self.obj.splitter, directory)
+                    }
+                ]
+            },
+            "test3": {
+                "jkl": u"100{}{}/c.yml".format(self.obj.splitter, directory),
+                "mno": u"TEMP{}{}/b.yml".format(self.obj.splitter, directory)
+            },
+            "b": u"2{}{}/b.yml".format(self.obj.splitter, directory),
+            "c": u"3{}{}/c.yml".format(self.obj.splitter, directory)
+        }
+        self.assertEqual(actual, result)
 
 
 if __name__ == "__main__":
