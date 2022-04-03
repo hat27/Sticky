@@ -1,4 +1,5 @@
-# -*-coding: utf8 -*-
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import os
 import re
@@ -8,6 +9,13 @@ import yaml
 import json
 import codecs
 import importlib
+
+try:
+    reload
+except NameError:
+    if hasattr(importlib, "reload"):
+        # for py3.4+
+        from importlib import reload
 
 
 class FieldValueGenerator(object):
@@ -32,17 +40,17 @@ class FieldValueGenerator(object):
                 if "_" in value:
                     return False
                 field_value[key] = value
-        
+
         return field_value
 
     def generate(self, template, field_value, force=False, custom_module_path=None):
         field_keys = self.get_field_keys(template)
         for key in field_keys:
             if key in field_value:
-                template = template.replace(key, 
+                template = template.replace(key,
                                             field_value[key])
 
-        if not custom_module_path is None:
+        if custom_module_path:
             mod = importlib.import_module(custom_module_path)
             reload(mod)
             field_value = mod.execute(self.get_field_keys(template), field_value)
@@ -60,7 +68,6 @@ class StickyConfig(object):
         self.field_value = None
         self.set(directory, field_value)
         self.generator = FieldValueGenerator()
-        self.splitter = "--->"
 
     def set(self, directory, field_value):
         self.set_directory(directory)
@@ -74,12 +81,15 @@ class StickyConfig(object):
 
     def read(self, path):
         if path.endswith(".yml"):
-            yml_data = yaml.load(codecs.open(path, "r"), Loader=yaml.SafeLoader)
-            return yml_data.get("info", {}), yml_data.get("data", {})
+            with codecs.open(path, "r") as f:
+                yml_data = yaml.load(f, Loader=yaml.SafeLoader)
+                return yml_data["info"], yml_data["data"]
 
         elif path.endswith(".json"):
-            json_data = json.load(codecs.open(path, "r"), "Utf8")
-            return json_data.get("info", {}), json_data.get("data", {})
+            with codecs.open(path, "r") as f:
+                json_data = json.load(f, encoding="utf8")
+                return json_data["info"], json_data["data"]
+
         return {}, {}
 
     def save(self, path, info=None, data={}, **args):
@@ -90,11 +100,11 @@ class StickyConfig(object):
             os.makedirs(os.path.dirname(path))
 
         if path.endswith(".json"):
-            with codecs.open(path, "w") as j:
-                json.dump({"info": info, "data": data}, j, "utf8", indent=4)
+            with codecs.open(path, "w", encoding="utf8") as j:
+                json.dump({"info": info, "data": data}, j, ensure_ascii=False, indent=4)
         else:
-            with codecs.open(path, "w") as y:
-                yaml.dump({"info": info, "data": data}, y, default_flow_style=False)
+            with codecs.open(path, "w", encoding="utf8") as y:
+                yaml.safe_dump({"info": info, "data": data}, y, allow_unicode=True)
 
     def get_key_file(self, template, directory=None):
         if directory is None:
@@ -110,24 +120,33 @@ class StickyConfig(object):
                 check = "_".join(split_template[:-i])
             key_name = self.generator.generate(check, self.field_value)
             if key_name:
-                if "%s.yml" % key_name in key_files:
-                    key_file = "%s/%s.yml" % (directory, 
-                                              key_name)
+                break_flg = False
+                for ext in ["yml", "json"]:
+                    if "{}.{}".format(key_name, ext) in key_files:
+                        key_file = "{}/{}.{}".format(directory,
+                                                     key_name,
+                                                     ext)
+                        break_flg = True
+                        break
+                if break_flg:
                     break
 
         return key_file
 
-    def get_override_file_list(self, path):
+    def get_override_file_list(self, path, field_value=None):
         if not os.path.exists(path):
             return []
 
         info, data = self.read(path)
         paths = [path]
-
         i = 0
         while info.get("parent", None):
-            d = os.path.dirname(path)
-            parent = os.path.normpath(os.path.join(path, info["parent"]))
+            parent_path = info["parent"]
+            if field_value is not None:
+                for k, v in field_value.items():
+                    parent_path = parent_path.replace(k, v)
+
+            parent = os.path.normpath(os.path.join(path, parent_path))
             if os.path.exists(parent):
                 paths.insert(0, parent)
                 info, data = self.read(parent)
@@ -146,7 +165,7 @@ class StickyConfig(object):
                 return value
 
             copy_field_value = copy.deepcopy(self.field_value)
-            if isinstance(value, (str, unicode)):
+            if isinstance(value, str):
                 gen = self.generator.generate(value, copy_field_value, force=True)
                 if gen.startswith("@"):
                     if gen.startswith("@../"):
@@ -155,7 +174,7 @@ class StickyConfig(object):
                         gen = gen[1:]
 
                 return gen
-            
+
             elif isinstance(value, list):
                 new = []
                 for v in value:
@@ -166,7 +185,7 @@ class StickyConfig(object):
             elif isinstance(value, dict):
                 new = {}
                 for k, v in value.items():
-                    if isinstance(v, (str, unicode)):
+                    if isinstance(v, str):
                         new[k] = self.generator.generate(v, copy_field_value, force=True)
                         if new[k].startswith("@"):
                             if new[k].startswith("@../"):
@@ -181,7 +200,7 @@ class StickyConfig(object):
 
             return value
 
-        default = copy.deepcopy(override)
+        # default = copy.deepcopy(override)
         if not type(base) == type(override):
             return value_mapping(base, use_field_value)
 
@@ -190,7 +209,7 @@ class StickyConfig(object):
 
         elif isinstance(base, dict):
             for k, v in base.items():
-                if not k in override:
+                if k not in override:
                     override[k] = v
                 else:
                     override[k] = self.values_override(v, override[k], use_field_value)
@@ -200,7 +219,7 @@ class StickyConfig(object):
         elif isinstance(base, list):
             override_ = []
             if isinstance(base[0], dict) and "name" in base[0]:
-                override_keys = [l["name"] for l in override]
+                override_keys = [value_["name"] for value_ in override]
 
                 rm = []
                 for each in base:
@@ -229,67 +248,3 @@ class StickyConfig(object):
 
         else:
             return value_mapping(override, self.field_value)
-
-
-    def trace_files(self, result_data, file_list):
-        for each in file_list[::-1]:
-            file_info, file_data = self.read(each)
-            file_name = "/".join(each.replace("\\", "/").split("/")[-2:])
-            self.trace_data(result_data, file_data, file_name)
-        return result_data
-
-
-    def trace_data(self, base, data, file_name):
-        def _add_file_name(value, file_name):
-            if isinstance(value, (int, float, bool)):
-                value = unicode(value)
-
-            if isinstance(value, (str, unicode)):
-                # value = value.split(self.splitter)[0]
-                if not self.splitter in value:
-                    value = "{}{}{}".format(value, self.splitter, file_name)
-
-            elif isinstance(value, dict):
-                for k, v in value.items():
-                    value[k] = _add_file_name(v, file_name)
-
-            elif isinstance(value, list):
-                ls_ = []
-                for v2 in v:
-                    ls.append(_add_file_name(v2))
-
-                value = ls_
-
-            return value
-
-        if isinstance(base, (int, float, bool)):
-            base = unicode(base)
-
-        if isinstance(data, (int, float, bool)):
-            data = unicode(data)        
-        if type(base) != type(data):
-            return base
-
-        elif isinstance(base, dict):
-            for k, v in base.items():
-                if k in data:
-                    base[k] = self.trace_data(v, data[k], file_name)
-                else:
-                    pass
-                    # base[k] = _add_file_name(v, file_name)
-            return base
-
-        elif isinstance(base, list):
-            base.insert(0, _add_file_name("", file_name))
-            return base
-        else:
-            base = _add_file_name(base, file_name)
-            return base
-
-        return base
-
-
-
-
-
-
