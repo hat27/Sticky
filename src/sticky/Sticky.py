@@ -68,6 +68,7 @@ class StickyConfig(object):
         self.field_value = None
         self.set(directory, field_value)
         self.generator = FieldValueGenerator()
+        self.splitter = "--->"
 
     def set(self, directory, field_value):
         self.set_directory(directory)
@@ -200,8 +201,7 @@ class StickyConfig(object):
 
             return value
 
-        # default = copy.deepcopy(override)
-        if not type(base) == type(override):
+        if type(base) != type(override):
             return value_mapping(base, use_field_value)
 
         elif isinstance(base, (int, float, bool)):
@@ -248,3 +248,84 @@ class StickyConfig(object):
 
         else:
             return value_mapping(override, self.field_value)
+
+    def trace_files(self, result_data, file_list):
+        for each in file_list[::-1]:
+            file_info, file_data = self.read(each)
+            file_name = "/".join(each.replace("\\", "/").split("/")[-2:])
+            self.trace_data(result_data, file_data, file_name)
+        return result_data
+
+    def trace_data(self, base, data, file_name):
+        def _add_file_name(value, file_name):
+            if isinstance(value, (int, float, bool)):
+                value = str(value)
+
+            if isinstance(value, str):
+                if self.splitter not in value:
+                    value = "{}{}{}".format(value, self.splitter, file_name)
+
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    value[k] = _add_file_name(v, file_name)
+
+            elif isinstance(value, list):
+                ls_ = []
+                for v2 in value:
+                    ls_.append(_add_file_name(v2, file_name))
+
+                value = ls_
+
+            return value
+
+        if isinstance(base, (int, float, bool)):
+            base = str(base)
+
+        if isinstance(data, (int, float, bool)):
+            data = str(data)
+
+        if type(base) != type(data):
+            return base
+
+        elif isinstance(base, dict):
+            for k, v in base.items():
+                if k in data:
+                    base[k] = self.trace_data(v, data[k], file_name)
+            return base
+
+        elif isinstance(base, list):
+            if len(base) > 0 and isinstance(base[0], dict) and "name" in base[0]:
+                new_list = []
+                for base_ in base:
+                    is_exists = False
+                    new_dict = {}
+                    for each in data:
+                        if base_["name"] == each["name"]:
+                            keys = each.keys()
+                            for key in keys:
+                                new_dict[key] = _add_file_name(each[key], file_name)
+                            is_exists = True
+                            break
+
+                    if is_exists:
+                        new_list.append(new_dict)
+                    else:
+                        new_list.append(base_)
+
+                base_keys = [v["name"].split(self.splitter)[0] for v in base]
+                for each in data:
+                    if each["name"] not in base_keys:
+                        new_dict = {}
+                        keys = each.keys()
+                        for key in keys:
+                            new_dict[key] = _add_file_name(each[key], file_name)
+                        new_list.append(new_dict)
+
+                return new_list
+            else:
+                return _add_file_name(base, file_name)
+        else:
+            base = _add_file_name(base, file_name)
+            return base
+
+        return base
