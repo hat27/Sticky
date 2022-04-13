@@ -218,6 +218,14 @@ class ValueOverrideKeywordDictTest(unittest.TestCase):
         self.assertEqual(actual, [{"name": "b", "value": 2},
                                   {"name": "a", "value": 10},
                                   {"name": "c", "value": 5}])
+    
+    def test_cancel_dict_list_override(self):
+        base = [{"name": "b", "value": 2},
+                {"name": "a", "value": 1}]
+
+        override = [{"name": "a", "cancel": True}]        
+        actual = self.obj.values_override(base, override)
+        self.assertEqual(actual, [{"name": "b", "value": 2}])
 
 
 class ValueOverrideHiearachyTest(unittest.TestCase):

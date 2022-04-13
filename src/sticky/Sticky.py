@@ -228,8 +228,8 @@ class StickyConfig(object):
                             if each["name"] == each2["name"]:
                                 dic = copy.deepcopy(each)
                                 for k, v in each2.items():
-                                    if k in dic:
-                                        dic[k] = v
+                                    dic[k] = v
+
                                 override_.append(dic)
                                 rm.append(i)
                     else:
@@ -241,8 +241,7 @@ class StickyConfig(object):
 
                 for each in override:
                     override_.append(each)
-                return value_mapping(override_, self.field_value)
-
+                return value_mapping([l for l in override_ if not l.get("cancel", False)], self.field_value)
             else:
                 return value_mapping(override, self.field_value)
 
