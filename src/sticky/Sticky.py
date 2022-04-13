@@ -241,7 +241,7 @@ class StickyConfig(object):
 
                 for each in override:
                     override_.append(each)
-                return value_mapping([l for l in override_ if not l.get("cancel", False)], self.field_value)
+                return value_mapping([dic for dic in override_ if not dic.get("cancel", False)], self.field_value)
             else:
                 return value_mapping(override, self.field_value)
 
