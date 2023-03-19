@@ -200,8 +200,11 @@ class StickyConfig(object):
                 return new
 
             return value
+        
+        if override is None:
+            return None
 
-        if type(base) != type(override):
+        elif type(base) != type(override):
             return value_mapping(base, use_field_value)
 
         elif isinstance(base, (int, float, bool)):
@@ -212,7 +215,12 @@ class StickyConfig(object):
                 if k not in override:
                     override[k] = v
                 else:
-                    override[k] = self.values_override(v, override[k], use_field_value)
+                    override_value = self.values_override(v, override[k], use_field_value)
+                    if override_value is not None:
+                        override[k] = override_value
+                    else:
+                        print("override value is None. key: {}".format(k))
+                        del override[k]
 
             return value_mapping(override, self.field_value)
 
