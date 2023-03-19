@@ -32,6 +32,6 @@ jobs:
       - name: tests
         env:
           PYTHONPATH: ${{ github.workspace }}/src
-        run:
+        run: |
           pip install -r requirements.txt
           python -m unittest discover -s ./tests
