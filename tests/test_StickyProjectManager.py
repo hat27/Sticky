@@ -39,8 +39,8 @@ class StickyProjectManagerTest(unittest.TestCase):
         results = ["sample/env/base.v1.yml", 
                    "sample/env/base.v2.yml", 
                    "sample/env/projectA.v1.yml", 
-                   "sample/env/toolA.v1.yml"]
-
+                   "sample/env/toolA.v1.yml",
+                   "sample/env/toolA.projectA.v1.yml"]
         self.assertEqual(self.obj.config_files, results)
 
         # project and variation is exists
@@ -58,7 +58,8 @@ class StickyProjectManagerTest(unittest.TestCase):
                    "sample/env/base.v2.yml",
                    "sample/env/projectA.v1.yml",
                    "sample/env/projectA.ep02.v1.yml",
-                   "sample/env/toolA.v1.yml"]
+                   "sample/env/toolA.v1.yml",
+                   "sample/env/toolA.projectA.ep02.v1.yml"]
 
         self.assertEqual(self.obj.config_files, results)
 
