@@ -62,7 +62,7 @@ class StickyProjectManager(object):
                 temp_files.append(path)
         
         if len(temp_files) == 0:
-            raise Exception("No env file found.")
+            raise Exception("No config file was found.: {}".format(self.root_directory))
         config_files.append(temp_files[-1].replace("\\", "/"))
 
         if tool_pattern:
