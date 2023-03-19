@@ -1,0 +1,8 @@
+info:
+  parent: ../toolA.v1.yml
+  name: toolA.projectA.v1
+
+data:
+  keyA: value1
+  keyB: value2
+  
