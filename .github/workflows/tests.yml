@@ -15,9 +15,8 @@ jobs:
         python-version: ["2.7", "3.7"]
 
     steps:
-      - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -28,12 +27,9 @@ jobs:
       # - name: Test with tox
       #   run: tox
 
-      - name: add_requirement
-        run:
-          pip install -r requirements.txt
-
       - name: tests
         env:
           PYTHONPATH: ${{ github.workspace }}/src
         run:
+          pip install -r requirements.txt
           python -m unittest discover -s ./tests
