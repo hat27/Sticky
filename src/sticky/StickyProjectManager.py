@@ -26,13 +26,8 @@ class StickyProjectManager(object):
             self.config_files.extend(self.sticky.get_override_file_list(key_config_file))
 
         self.config_files = [os.path.normpath(l).replace("\\", "/") for l in self.config_files]
-        print("")
-        print("{} {} {}".format(self.project, self.variation, self.tool_name))
-        print("key file is : {}".format(self.key_config_files))
-        print("related files are:")
         self.config = {}
         for each in self.config_files:
-            print(each)
             override_info, override_data = self.sticky.read(each)
             self.config = self.sticky.values_override(self.config, override_data)
 
