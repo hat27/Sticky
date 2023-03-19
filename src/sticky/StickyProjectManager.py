@@ -50,9 +50,11 @@ class StickyProjectManager(object):
         base_project_pattern = "{}/base.v*.yml".format(self.root_directory)
         variation_pattern = "{}/{}.{}.v*.yml".format(self.root_directory, self.project, self.variation)
         base_variation_pattern = "{}/base.{}.v*.yml".format(self.root_directory, self.variation)
-        tool_pattern = False
+        tool_patterns = []
         if self.tool_name:
-            tool_pattern = "{}/{}.v*.yml".format(self.root_directory, self.tool_name)
+            tool_patterns.append("{}/{}.v*.yml".format(self.root_directory, self.tool_name))
+            tool_patterns.append("{}/{}.{}.v*.yml".format(self.root_directory, self.tool_name, self.project))
+            tool_patterns.append("{}/{}.{}.{}.v*.yml".format(self.root_directory, self.tool_name, self.project, self.variation))
 
         config_files = []
         temp_files = []
@@ -65,9 +67,11 @@ class StickyProjectManager(object):
             raise Exception("No config file was found.: {}".format(self.root_directory))
         config_files.append(temp_files[-1].replace("\\", "/"))
 
-        if tool_pattern:
-            path = _get(tool_pattern)
-            if path:
-                config_files.append(path)
+        if len(tool_patterns) > 0:
+            for tool_pattern in tool_patterns[::-1]:
+                path = _get(tool_pattern)
+                if path:
+                    config_files.append(path)
+                    break
         
         return config_files
