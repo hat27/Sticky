@@ -28,7 +28,11 @@ jobs:
       # - name: Test with tox
       #   run: tox
 
-      - name: test_with_python
+      - name: add_requirement
+        run:
+          pip install -r requirements.txt
+
+      - name: tests
         env:
           PYTHONPATH: ${{ github.workspace }}/src
         run:
