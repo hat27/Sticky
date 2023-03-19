@@ -30,6 +30,6 @@ jobs:
 
       - name: test_with_python
         env:
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/src
         run:
           python -m unittest discover -s ./tests
