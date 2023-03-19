@@ -28,13 +28,13 @@ class FieldValueGenerator(object):
 
     def get_field_value(self, template, value):
         field_keys = self.get_field_keys(template)
-        template = os.path.normpath(template)
+        # template = os.path.normpath(template)
         for key in field_keys:
             template = template.replace(key, "(.*)")
 
         values = re.match(template, value, re.IGNORECASE)
+        field_value = {}
         if values:
-            field_value = {}
             for i, key in enumerate(field_keys):
                 value = values.groups()[i]
                 if "_" in value:
