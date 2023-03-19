@@ -27,9 +27,12 @@ jobs:
       # - name: Test with tox
       #   run: tox
 
+      - name: add_requirement
+        run:
+          pip install -r requirements.txt
+
       - name: tests
         env:
           PYTHONPATH: ${{ github.workspace }}/src
-        run: |
-          pip install -r requirements.txt
+        run:
           python -m unittest discover -s ./tests
