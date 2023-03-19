@@ -1,0 +1,10 @@
+info:
+  parent: ../projectA.v1.yml
+  name: base.v2
+
+data:
+  general:
+    resolution: 
+      width: 1920
+      height: 1080
+      fps: 30

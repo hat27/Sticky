@@ -1,0 +1,8 @@
+info:
+  parent: none
+  name: toolA.v1
+
+data:
+  keyA: value1
+  keyB: value2
+  
