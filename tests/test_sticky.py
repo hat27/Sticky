@@ -63,7 +63,6 @@ class GetFieldValueTest(unittest.TestCase):
         actual = self.obj.get_field_value(template, value)
         self.assertEqual(actual, False)
 
-
 class GenerateTest(unittest.TestCase):
     def setUp(self):
         self.obj = FieldValueGenerator()
@@ -226,6 +225,12 @@ class ValueOverrideKeywordDictTest(unittest.TestCase):
         override = [{"name": "a", "cancel": True}]
         actual = self.obj.values_override(base, override)
         self.assertEqual(actual, [{"name": "b", "value": 2}])
+
+    def test_cancel_by_none(self):
+        base = {"name": "b", "value": 2}
+        override = {"value": None}
+        actual = self.obj.values_override(base, override)
+        self.assertEqual(actual, {"name": "b"})
 
 
 class ValueOverrideHiearachyTest(unittest.TestCase):
